@@ -141,6 +141,7 @@ def main():
                 this_person_cat_id = data["id"]
 
     pose_results = []
+    print("Running inference..")
     while (cap.isOpened()):
         pose_results_last = pose_results
         flag, img = cap.read()
@@ -250,12 +251,12 @@ def main():
 
     with open(output_file_path, "w") as fobj:
       json.dump(results, fobj, indent=2)
-      print("save json file to , %s!" % output_file_path)
+      print("save json file to /%s" % output_file_path)
 
     cap.release()
     if save_out_video:
         videoWriter.release()
-        print("save video to , %s!" % args.out_video_root)
+        print("save video to directory /%s/" % args.out_video_root)
     if args.show:
         cv2.destroyAllWindows()
 
