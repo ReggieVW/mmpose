@@ -149,9 +149,9 @@ def main():
             break
         person_results = []
         for data in json_data["annotations"]:
-            if data.get("frame_id"):
+            if "frame_id" in data:
                 frame_json_id = data["frame_id"]
-            elif data.get("image_id"):
+            elif "image_id" in data:
                 frame_json_id = data["image_id"] - 1
             if frame_id != frame_json_id:
                 continue
@@ -162,15 +162,15 @@ def main():
             person['activity'] = ""
             if "track_id" in data:
                 person['track_id'] = data["track_id"]
-            elif "track_id" in data["attributes"]:
+            elif "attributes" in data and "track_id" in data["attributes"]:
                 person['track_id'] = data["attributes"]["track_id"]
             if "occluded" in data:
                 person['occluded'] = data["occluded"]
-            elif "occluded" in data["attributes"]:
+            elif "attributes" in data and "occluded" in data["attributes"]:
                 person['occluded'] = int(data["attributes"]["occluded"])
             if "activity" in data:
                 person['activity'] = data["activity"]
-            elif "activity" in data["attributes"]:
+            elif "attributes" in data and "activity" in data["attributes"]:
                 person['activity'] = data["attributes"]["activity"]
             bbox_score = 1.0
             person['bbox'] = [data["bbox"][0],data["bbox"][1],data["bbox"][0]+data["bbox"][2],data["bbox"][1]+data["bbox"][3], bbox_score]
@@ -212,7 +212,7 @@ def main():
                     'frame_id': frame_id,
                     'keypoints': key_point,
                     'bbox': [pose_results[i]["bbox"][0], pose_results[i]["bbox"][1], round(pose_results[i]["bbox"][2]-pose_results[i]["bbox"][0],3),round(pose_results[i]["bbox"][3]-pose_results[i]["bbox"][1],3)],
-                    'occluded' : pose_results[i]["occluded"],
+                    'occluded' : 0 if pose_results[i].get("occluded") is None else pose_results[i].get("occluded"),
                     'activity': pose_results[i].get("activity"),
                     'category_id': 1
                     }
