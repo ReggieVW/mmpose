@@ -97,17 +97,16 @@ def main():
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         videoWriter = cv2.VideoWriter(
             os.path.join(args.out_video_root,
-                         f'vis_{os.path.basename(args.video_path)}'), fourcc,
+                         f'vid_output_{os.path.basename(args.video_path)}'), fourcc,
             fps, size)
 
     frame_id = 0
     track_ids = []
     pose_results = []
+
     # Opening JSON file
     json_f = open(args.json_path)
     json_data = json.load(json_f)
-    results = {}
-    results['annotations'] = []
 
     for data in json_data ["annotations"]:
         track_id = data["track_id"]
@@ -115,7 +114,6 @@ def main():
             track_ids.append(track_id)
 
     while (cap.isOpened()):
-        pose_results_last = pose_results
 
         flag, img = cap.read()
         if not flag:
@@ -135,6 +133,8 @@ def main():
                 person['activity'] = str(data["activity"])
             person['category_id'] = category_id
             person['frame_id'] = frame_id
+            if "occluded" in data:
+                person['occluded'] = data["occluded"]
             person['track_id'] = data["track_id"]
             keypoints =  data["keypoints"]
             person_key_points = []
@@ -168,18 +168,12 @@ def main():
         print(f"Frame {frame_id}")
         frame_id += 1
 
-    file_path = "output.json"
-
-    with open(file_path, "w") as fobj:
-      json.dump(results, fobj, indent=2)
-
     cap.release()
     if save_out_video:
         videoWriter.release()
-        print("save video")
+        print("save video to directory /%s/" % args.out_video_root)
     if args.show:
         cv2.destroyAllWindows()
-
 
 if __name__ == '__main__':
     main()

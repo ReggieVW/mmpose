@@ -102,7 +102,7 @@ def main():
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         videoWriter = cv2.VideoWriter(
             os.path.join(args.out_video_root,
-                         f'vis_{os.path.basename(args.video_path)}'), fourcc,
+                         f'vid_output_{os.path.basename(args.video_path)}'), fourcc,
             fps, size)
 
     # optional
@@ -112,7 +112,6 @@ def main():
     output_layer_names = None
 
     frame_id = 0
-    # Opening JSON file
     results = {}
     date_str = f"{date.today():%Y/%m/%d}"
     results['info'] = {"description": os.path.basename(args.video_path), "data_created": date_str}
@@ -131,6 +130,7 @@ def main():
                        "supercategory": "person"}
     results["categories"].append(cat_dict_person)
 
+    # Opening JSON file
     json_f = open(args.input_json_path)
     json_data = json.load(json_f)
 
@@ -160,14 +160,18 @@ def main():
                 continue
             person = {}
             person['activity'] = ""
-            if "activity" in data:
-                person['activity'] = data["activity"]
-            elif "activity" in data["attributes"]:
-                person['activity'] = data["attributes"]["activity"]
             if "track_id" in data:
                 person['track_id'] = data["track_id"]
             elif "track_id" in data["attributes"]:
                 person['track_id'] = data["attributes"]["track_id"]
+            if "occluded" in data:
+                person['occluded'] = data["occluded"]
+            elif "occluded" in data["attributes"]:
+                person['occluded'] = int(data["attributes"]["occluded"])
+            if "activity" in data:
+                person['activity'] = data["activity"]
+            elif "activity" in data["attributes"]:
+                person['activity'] = data["attributes"]["activity"]
             bbox_score = 1.0
             person['bbox'] = [data["bbox"][0],data["bbox"][1],data["bbox"][0]+data["bbox"][2],data["bbox"][1]+data["bbox"][3], bbox_score]
             person['category_id'] = 1
@@ -184,17 +188,6 @@ def main():
             dataset_info=dataset_info,
             return_heatmap=return_heatmap,
             outputs=output_layer_names)
-
-
-        # get track id for each person instance
-        #pose_results, next_id = get_track_id(
-        #    pose_results,
-        #    pose_results_last,
-        #    next_id,
-        #    use_oks=args.use_oks_tracking,
-        #    tracking_thr=args.tracking_thr,
-        #    use_one_euro=args.euro,
-        #    fps=fps)
 
         # show the results
         vis_img = vis_pose_tracking_result(
@@ -219,6 +212,7 @@ def main():
                     'frame_id': frame_id,
                     'keypoints': key_point,
                     'bbox': [pose_results[i]["bbox"][0], pose_results[i]["bbox"][1], round(pose_results[i]["bbox"][2]-pose_results[i]["bbox"][0],3),round(pose_results[i]["bbox"][3]-pose_results[i]["bbox"][1],3)],
+                    'occluded' : pose_results[i]["occluded"],
                     'activity': pose_results[i].get("activity"),
                     'category_id': 1
                     }
