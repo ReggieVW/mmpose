@@ -13,7 +13,6 @@ from mmpose.apis import (get_track_id, inference_top_down_pose_model,
                          init_pose_model, process_mmdet_results,
                          vis_pose_tracking_result)
 from mmpose.datasets import DatasetInfo
-
 from mmdet.apis import inference_detector, init_detector
 
 
@@ -140,6 +139,20 @@ def main():
             if label_name == "person":
                 this_person_cat_id = data["id"]
 
+    # put data from other objects then person to the result
+    for data in json_data["annotations"]:
+        category_id = data["category_id"]
+        if category_id == this_person_cat_id:
+            continue
+        dict_obj = {
+            'track_id': data["track_id"] if "track_id" in data else data["attributes"]["track_id"],
+            'frame_id': data["frame_id"] if "frame_id" in data  else data["attributes"]["image_id"],
+            'bbox': data["bbox"],
+            'occluded' : 0 if data.get("occluded") is None else data.get("occluded"),
+            'category_id': category_id
+        }
+        results['annotations'].append(dict_obj)
+
     pose_results = []
     print("Running inference..")
     while (cap.isOpened()):
@@ -216,17 +229,8 @@ def main():
                     'activity': pose_results[i].get("activity"),
                     'category_id': 1
                     }
-            #else:
-            #    dict_obj = {
-            #        'track_id': pose_results[i]["track_id"],
-            #        'frame_id': frame_id,
-            #        'keypoints': pose_results[i]["keypoints"].tolist(),
-            #        'bbox': pose_results[i]["bbox"].tolist(),
-            #        'bbox': [pose_results[i]["bbox"][0], pose_results[i]["bbox"][1], pose_results[i]["bbox"][2]-pose_results[i]["bbox"][0],pose_results[i]["bbox"][3]-pose_results[i]["bbox"][1]],
-            #          'category_id': pose_results[i]["category_id"]
-            #        }
             results['annotations'].append(dict_obj)
-
+ 
         if args.show:
             cv2.imshow('Image', vis_img)
 
