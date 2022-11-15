@@ -1,5 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 """
+@Created By Reginald Van Woensel
+@Created Date 13 Apr 2022
 Visualize COCO JSON using the OpenMMLab framework
 """
 import os
@@ -101,17 +103,16 @@ def main():
             fps, size)
 
     frame_id = 0
-    track_ids = []
-    pose_results = []
 
     # Opening JSON file
     json_f = open(args.json_path)
     json_data = json.load(json_f)
 
-    for data in json_data ["annotations"]:
-        track_id = data["track_id"]
-        if track_id not in track_ids:
-            track_ids.append(track_id)
+    for data in json_data["annotations"]:
+        for data in json_data["categories"]:
+            label_name = data["name"]
+            if label_name == "person":
+                this_person_cat_id = data["id"]
 
     while (cap.isOpened()):
 
@@ -121,26 +122,38 @@ def main():
 
         pose_results = []
         for data in json_data["annotations"]:
-            frame_json_id = data["frame_id"]
+            if "frame_id" in data:
+                frame_json_id = data["frame_id"]
+            elif "image_id" in data:
+                frame_json_id = data["image_id"] - 1
             if frame_id != frame_json_id:
                 continue
-            category_id = data["category_id"] if 'category_id' in data else 1
-            if category_id != 1:
+            category_id = data["category_id"]
+            if category_id != this_person_cat_id:
                 continue
             person = {}
-            person['bbox'] = [data["bbox"][0],data["bbox"][1],data["bbox"][0]+data["bbox"][2],data["bbox"][1]+data["bbox"][3],1.0]
-            if 'activity' in data:
-                person['activity'] = str(data["activity"])
-            person['category_id'] = category_id
-            person['frame_id'] = frame_id
+            person['activity'] = ""
+            if "track_id" in data:
+                person['track_id'] = data["track_id"]
+            elif "attributes" in data and "track_id" in data["attributes"]:
+                person['track_id'] = data["attributes"]["track_id"]
             if "occluded" in data:
                 person['occluded'] = data["occluded"]
-            person['track_id'] = data["track_id"]
-            keypoints =  data["keypoints"]
+            elif "attributes" in data and "occluded" in data["attributes"]:
+                person['occluded'] = int(data["attributes"]["occluded"])
+            if "activity" in data:
+                person['activity'] = data["activity"]
+            elif "attributes" in data and "activity" in data["attributes"]:
+                person['activity'] = data["attributes"]["activity"]
+            person['category_id'] = 1
+            person['bbox'] = [data["bbox"][0],data["bbox"][1],data["bbox"][0]+data["bbox"][2],data["bbox"][1]+data["bbox"][3],1.0]
+            person['frame_id'] = frame_id
             person_key_points = []
-            for x, y, z in threewise(keypoints):
-                person_key_point = [x, y,z]
-                person_key_points.append(person_key_point)
+            if "keypoints" in data:
+                keypoints =  data["keypoints"]
+                for x, y, z in threewise(keypoints):
+                    person_key_point = [x, y,z]
+                    person_key_points.append(person_key_point)
             person["keypoints"] = person_key_points
             pose_results.append(person)
 

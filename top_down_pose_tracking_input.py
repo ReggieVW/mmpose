@@ -1,5 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 """
+@Created By Reginald Van Woensel
+@Created Date 13 Apr 2022
 Adding pose estimations to COCO JSON using the OpenMMLab framework
 """
 import os
