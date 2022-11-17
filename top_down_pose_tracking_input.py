@@ -10,7 +10,7 @@ from argparse import ArgumentParser
 import json
 import cv2
 from datetime import datetime, date
-
+from mmpose.core import Smoother
 from mmpose.apis import (get_track_id, inference_top_down_pose_model,
                          init_pose_model, process_mmdet_results,
                          vis_pose_tracking_result)
@@ -48,15 +48,21 @@ def main():
         default=0.3,
         help='Bounding box score threshold')
     parser.add_argument(
-        '--kpt-thr', type=float, default=0.3, help='Keypoint score threshold')
-    parser.add_argument(
-        '--use-oks-tracking', action='store_true', help='Using OKS tracking')
-    parser.add_argument(
-        '--tracking-thr', type=float, default=0.3, help='Tracking threshold')
-    parser.add_argument(
         '--euro',
         action='store_true',
-        help='Using One_Euro_Filter for smoothing')
+        help='(Deprecated, please use --smooth and --smooth-filter-cfg) '
+        'Using One_Euro_Filter for smoothing.')
+    parser.add_argument(
+        '--smooth',
+        action='store_true',
+        help='Apply a temporal filter to smooth the pose estimation results. '
+        'See also --smooth-filter-cfg.')
+    parser.add_argument(
+        '--smooth-filter-cfg',
+        type=str,
+        default='configs/_base_/filters/one_euro.py',
+        help='Config file of the filter to smooth the pose estimation '
+        'results. See also --smooth.')
     parser.add_argument(
         '--radius',
         type=int,
@@ -67,6 +73,8 @@ def main():
         type=int,
         default=1,
         help='Link thickness for visualization')
+    parser.add_argument(
+        '--kpt-thr', type=float, default=0.3, help='Keypoint score threshold')
 
     args = parser.parse_args()
 
@@ -105,6 +113,15 @@ def main():
             os.path.join(args.out_video_root,
                          f'vid_output_{os.path.basename(args.video_path)}'), fourcc,
             fps, size)
+
+    # build pose smoother for temporal refinement
+    if args.euro:
+        smoother = Smoother(
+            filter_cfg='configs/_base_/filters/one_euro.py', keypoint_dim=2)
+    elif args.smooth:
+        smoother = Smoother(filter_cfg=args.smooth_filter_cfg, keypoint_dim=2)
+    else:
+        smoother = None
 
     # optional
     return_heatmap = False
@@ -203,6 +220,10 @@ def main():
             dataset_info=dataset_info,
             return_heatmap=return_heatmap,
             outputs=output_layer_names)
+
+        # post-process the pose results with smoother
+        if smoother:
+            pose_results = smoother.smooth(pose_results)
 
         # show the results
         vis_img = vis_pose_tracking_result(
