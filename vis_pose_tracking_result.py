@@ -110,6 +110,7 @@ def main():
         if not flag:
             break
 
+        #Transforming data input to person objects
         pose_results = []
         for data in json_data["annotations"]:
             if "frame_id" in data:

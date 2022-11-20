@@ -180,6 +180,7 @@ def main():
         if not flag:
             break
         person_results = []
+        #Transforming input data to person objects
         for data in json_data["annotations"]:
             if "frame_id" in data:
                 frame_json_id = data["frame_id"]
@@ -237,6 +238,7 @@ def main():
             kpt_score_thr=args.kpt_thr,
             show=False)
             
+        #Transforming pose_results to data output
         for i in range(len(pose_results)):
             pos_arr = pose_results[i]["keypoints"].flatten().tolist()
             key_point = []
